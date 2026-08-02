@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vardiya Takip</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+  :root {
+    --bg: #080810; --surface: #0e0e1c; --card: #13132a; --border: rgba(255,255,255,0.07);
+    --gunduz: #f59e0b; --gunduz-bg: rgba(245,158,11,0.1);
+    --gece: #818cf8;   --gece-bg: rgba(129,140,248,0.1);
+    --izin: #34d399;   --izin-bg: rgba(52,211,153,0.1);
+    --tatil: #ff5555;  --tatil-bg: rgba(255,85,85,0.08);
+    --muted: #555577;  --text: #e0e0f0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Space Grotesk', sans-serif; min-height: 100vh; }
+
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 20px; display: flex; align-items: center; gap: 10px; }
+  .header-icon { font-size: 1.4rem; }
+  .header h1 { font-size: 1.1rem; font-weight: 700; }
+  .header-clock { font-family: 'Space Mono', monospace; margin-left: auto; text-align: right; }
+  .header-clock .hc-time { font-size: 1.1rem; font-weight: 700; color: var(--text); display: block; }
+  .header-clock .hc-date { font-size: 0.7rem; color: var(--muted); display: block; margin-top: 1px; }
+
+  .hero { padding: 16px; display: grid; grid-template-columns: 1fr; gap: 10px; }
+  .hero-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 14px; position: relative; overflow: hidden; }
+  .hero-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  .hero-card.gunduz::before { background: var(--gunduz); }
+  .hero-card.gece::before   { background: var(--gece); }
+  .hero-card.izin::before   { background: var(--izin); }
+  .hero-card.degisim::before { background: linear-gradient(90deg, var(--gece), var(--gunduz)); }
+  .card-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); margin-bottom: 8px; }
+  .card-value { font-family: 'Space Mono', monospace; font-size: 1.6rem; font-weight: 700; line-height: 1; }
+  .card-value.gunduz { color: var(--gunduz); } .card-value.gece { color: var(--gece); }
+  .card-value.izin   { color: var(--izin); }   .card-value.degisim { color: var(--text); }
+  .card-sub { font-size: 0.7rem; color: var(--muted); margin-top: 4px; }
+  .shift-timer { display: flex; gap: 8px; margin-top: 12px; }
+  .st-block { background: var(--surface); border-radius: 8px; padding: 8px 10px 6px; text-align: center; flex: 1; }
+  .st-num { font-family: 'Space Mono', monospace; font-size: 1.4rem; font-weight: 700; display: block; line-height: 1; }
+  .st-unit { font-size: 0.55rem; text-transform: uppercase; color: var(--muted); display: block; margin-top: 3px; }
+  .st-block.gunduz .st-num { color: var(--gunduz); }
+  .st-block.gece .st-num { color: var(--gece); }
+  .st-block.izin .st-num { color: var(--izin); }
+
+
+
+  .tatil-today { margin: 0 16px 16px; border-radius: 14px; padding: 12px 16px; background: var(--tatil-bg); border: 1px solid rgba(255,85,85,0.3); display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: var(--tatil); font-weight: 600; }
+
+  .countdown-section { margin: 0 16px 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .countdown-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px; }
+  .c-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 10px; }
+  .countdown-blocks { display: flex; gap: 6px; }
+  .c-block { background: var(--surface); border-radius: 8px; padding: 8px 6px 6px; text-align: center; flex: 1; }
+  .c-num { font-family: 'Space Mono', monospace; font-size: 1.3rem; font-weight: 700; display: block; line-height: 1; }
+  .c-unit { font-size: 0.55rem; text-transform: uppercase; color: var(--muted); display: block; margin-top: 3px; }
+  .c-block.izin .c-num { color: var(--izin); } .c-block.degisim .c-num { color: var(--gece); }
+
+  .section-title { padding: 0 16px 8px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 0 16px 14px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.7rem; color: var(--muted); }
+  .l-dot { width: 10px; height: 10px; border-radius: 3px; }
+
+  .calendar-wrap { padding: 0 16px 32px; }
+  .month-title { font-size: 0.85rem; font-weight: 700; color: var(--text); margin-bottom: 8px; margin-top: 20px; opacity: 0.5; }
+  .month-title.current-month { opacity: 1; color: var(--gece); }
+  .month-title:first-child { margin-top: 0; }
+
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+  .cal-header { text-align: center; font-size: 0.6rem; color: var(--muted); font-weight: 600; padding: 4px 0; }
+  .cal-cell { border-radius: 8px; min-height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 4px 2px; }
+  .cal-cell.empty { background: transparent; }
+  .cal-cell.past  { opacity: 0.22; }
+  .cal-cell.today-cell { outline: 2px solid white; outline-offset: -2px; }
+  .cal-cell.gunduz { background: var(--gunduz-bg); } .cal-cell.gece { background: var(--gece-bg); } .cal-cell.izin { background: var(--izin-bg); }
+  .cal-cell.outrange { background: rgba(255,255,255,0.02); }
+  .cal-cell.tatil-cell { box-shadow: inset 0 0 0 1.5px var(--tatil); }
+  .cal-num { font-size: 0.8rem; font-weight: 700; }
+  .cal-cell.gunduz .cal-num { color: var(--gunduz); } .cal-cell.gece .cal-num { color: var(--gece); }
+  .cal-cell.izin .cal-num   { color: var(--izin); }   .cal-cell.outrange .cal-num { color: var(--muted); }
+  .cal-icon { font-size: 0.95rem; line-height: 1; }
+  .cal-tatil-name { font-size: 0.42rem; color: var(--tatil); text-align: center; line-height: 1.2; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span class="header-icon">⏱</span>
+  <h1>Vardiya Takip</h1>
+  <div class="header-clock"><span class="hc-time" id="clock">--:--:--</span><span class="hc-date" id="headerDate">--</span></div>
+</div>
+
+<div class="hero" id="hero"></div>
+<div id="tatilToday"></div>
+
+<div class="countdown-section" id="countdown"></div>
+
+<div class="section-title">TAKVİM</div>
+<div class="legend">
+  <div class="legend-item"><div class="l-dot" style="background:var(--gunduz)"></div>Gündüz 08-20</div>
+  <div class="legend-item"><div class="l-dot" style="background:var(--gece)"></div>Gece 20-08</div>
+  <div class="legend-item"><div class="l-dot" style="background:var(--izin)"></div>İzin</div>
+  <div class="legend-item"><div class="l-dot" style="background:transparent;box-shadow:inset 0 0 0 1.5px var(--tatil)"></div>Resmi Tatil</div>
+</div>
+<div class="calendar-wrap" id="calWrap"></div>
+
+<script>
+const TR_MONTHS   = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+const TR_SHORT    = ['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'];
+const TR_LONG     = ['Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi','Pazar'];
+
+// Sabit başlangıç
+const START = new Date(2026, 5, 28); // 28 Haziran 2026
+
+function dateKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// Tatiller — her yıl tekrar edenler dinamik olarak da eklenebilir
+const HOLIDAYS = {
+  '2026-07-15': '15 Temmuz',
+  '2026-08-30': 'Zafer Bayramı',
+  '2026-10-28': 'Cumh. Arifesi',
+  '2026-10-29': 'Cumhuriyet',
+  '2027-01-01': 'Yılbaşı',
+  '2027-03-08': 'Ram. Arifesi',
+  '2027-03-09': 'Ramazan 1.Gün',
+  '2027-03-10': 'Ramazan 2.Gün',
+  '2027-03-11': 'Ramazan 3.Gün',
+  '2027-04-23': '23 Nisan',
+  '2027-05-01': '1 Mayıs',
+  '2027-05-15': 'Kurban Arifesi',
+  '2027-05-16': 'Kurban 1.Gün',
+  '2027-05-17': 'Kurban 2.Gün',
+  '2027-05-18': 'Kurban 3.Gün',
+  '2027-05-19': '19 Mayıs/Kurban 4',
+  '2027-08-30': 'Zafer Bayramı',
+  '2027-10-28': 'Cumh. Arifesi',
+  '2027-10-29': 'Cumhuriyet',
+  '2028-01-01': 'Yılbaşı',
+};
+
+function getShift(date) {
+  const diff = Math.floor((date - START) / 86400000);
+  if (diff < 0) return null;
+  const c = diff % 12;
+  if (c < 4) return 'gunduz';
+  if (c < 8) return 'gece';
+  return 'izin';
+}
+
+function shiftLabel(s) {
+  if (s === 'gunduz') return { icon: '☀️', text: 'Gündüz', time: '08:00 – 20:00' };
+  if (s === 'gece')   return { icon: '🌙', text: 'Gece',   time: '20:00 – 08:00' };
+  return { icon: '🏖️', text: 'İzin', time: 'Serbest' };
+}
+
+function nextChange(today) {
+  const diff = Math.floor((today - START) / 86400000);
+  const daysLeft = 4 - (diff % 4);
+  const d = new Date(today); d.setDate(d.getDate() + daysLeft); return d;
+}
+
+function nextIzin(today) {
+  const diff = Math.floor((today - START) / 86400000);
+  const pos = diff % 12;
+  const daysToIzin = pos < 8 ? 8 - pos : 20 - pos;
+  const d = new Date(today); d.setDate(d.getDate() + daysToIzin); return d;
+}
+
+function msToHMS(ms) {
+  const t = Math.max(0, Math.floor(ms/1000));
+  return {
+    h: String(Math.floor(t/3600)).padStart(2,'0'),
+    m: String(Math.floor((t%3600)/60)).padStart(2,'0'),
+    s: String(t%60).padStart(2,'0')
+  };
+}
+
+function render() {
+  const now = new Date();
+  const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayShift = getShift(todayDate);
+  const sl = shiftLabel(todayShift);
+  const todayHoliday = HOLIDAYS[dateKey(todayDate)];
+
+  // HERO
+  const changeDate = nextChange(todayDate);
+  const izinDate   = nextIzin(todayDate);
+  const daysToChange = Math.ceil((changeDate - todayDate) / 86400000);
+  const daysToIzin   = Math.ceil((izinDate   - todayDate) / 86400000);
+
+  // Vardiya bitiş saati
+  let shiftEndMs = 0;
+  if (todayShift === 'gunduz') {
+    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 20, 0, 0);
+    shiftEndMs = end - now;
+  } else if (todayShift === 'gece') {
+    // Gece vardiyası 20:00 başlar, ertesi gün 08:00 biter
+    let end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8, 0, 0);
+    if (now.getHours() >= 20) end.setDate(end.getDate() + 1);
+    shiftEndMs = end - now;
+  } else {
+    // İzin — bir sonraki gece/gündüz başına kadar
+    shiftEndMs = 0;
+  }
+  const seH = String(Math.floor(Math.max(0,shiftEndMs) / 3600000)).padStart(2,'0');
+  const seM = String(Math.floor((Math.max(0,shiftEndMs) % 3600000) / 60000)).padStart(2,'0');
+  const seS = String(Math.floor((Math.max(0,shiftEndMs) % 60000) / 1000)).padStart(2,'0');
+
+  document.getElementById('hero').innerHTML = `
+    <div class="hero-card ${todayShift}">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <span style="font-size:2rem">${sl.icon}</span>
+        <div>
+          <div class="card-label" style="margin-bottom:2px">Bugünkü Vardiya</div>
+          <div style="font-size:1.1rem;font-weight:700;color:${todayShift==='gunduz'?'var(--gunduz)':todayShift==='gece'?'var(--gece)':'var(--izin)'}">${sl.text}</div>
+        </div>
+        <div style="margin-left:auto;text-align:right">
+          <div class="card-label" style="margin-bottom:2px">Saat</div>
+          <div style="font-family:'Space Mono',monospace;font-size:1rem;color:var(--muted)">${sl.time}</div>
+        </div>
+      </div>
+      ${todayShift !== 'izin' ? `
+      <div class="card-label">Vardiyanın Bitmesine</div>
+      <div class="shift-timer" id="shiftTimer">
+        <div class="st-block ${todayShift}"><span class="st-num">${seH}</span><span class="st-unit">Saat</span></div>
+        <div class="st-block ${todayShift}"><span class="st-num">${seM}</span><span class="st-unit">Dak</span></div>
+        <div class="st-block ${todayShift}"><span class="st-num">${seS}</span><span class="st-unit">San</span></div>
+      </div>` : '<div class="card-label" style="color:var(--izin);font-size:0.9rem;margin-top:4px">🏖️ Bugün İzinlisin</div>'}
+    </div>`;
+
+  document.getElementById('tatilToday').innerHTML = todayHoliday
+    ? `<div class="tatil-today">🔴 Bugün resmi tatil: ${todayHoliday}</div>` : '';
+
+
+
+
+  // COUNTDOWN
+  const izinMs   = new Date(izinDate.getFullYear(), izinDate.getMonth(), izinDate.getDate(), 8,0,0) - now;
+  const changeMs = new Date(changeDate.getFullYear(), changeDate.getMonth(), changeDate.getDate(), 0,0,0) - now;
+  const iH = msToHMS(izinMs), cH = msToHMS(changeMs);
+  const iD = Math.floor(izinMs/86400000), cD = Math.floor(changeMs/86400000);
+
+  document.getElementById('countdown').innerHTML = `
+    <div class="countdown-card">
+      <div class="c-label">🏖️ İzine Kalan</div>
+      <div class="countdown-blocks" id="izinBlocks"></div>
+    </div>
+    <div class="countdown-card">
+      <div class="c-label">🔄 Değişime Kalan</div>
+      <div class="countdown-blocks" id="degisimBlocks"></div>
+    </div>`;
+  updateIzinBlocks(izinMs);
+  updateDegisimBlocks(changeMs);
+
+  // CALENDAR — bu aydan başla, tam 12 ay göster (son ay tam çıksın)
+  // Geçmiş günler kademeli flulaşır, bugün beyaz çerçeveli
+  let calHTML = '';
+  const calStart = new Date(todayDate.getFullYear(), todayDate.getMonth(), 1);
+  // 12 ay sonrasının son günü — tam ay göster
+  const calEnd = new Date(todayDate.getFullYear(), todayDate.getMonth() + 12 + 1, 0);
+
+  let cur = new Date(calStart);
+  while (cur <= calEnd) {
+    const y = cur.getFullYear(), m = cur.getMonth();
+    const daysInMonth = new Date(y, m+1, 0).getDate();
+    const firstDow = (new Date(y, m, 1).getDay() + 6) % 7;
+    const isCurrentMonth = y === todayDate.getFullYear() && m === todayDate.getMonth();
+
+    calHTML += `<div class="month-title ${isCurrentMonth ? 'current-month' : ''}">${TR_MONTHS[m]} ${y}</div><div class="cal-grid">`;
+    TR_SHORT.forEach(d => { calHTML += `<div class="cal-header">${d}</div>`; });
+    for (let i = 0; i < firstDow; i++) calHTML += `<div class="cal-cell empty"></div>`;
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(y, m, d);
+      const shift = getShift(date);
+      const isPast  = date < todayDate;
+      const isToday = date.getTime() === todayDate.getTime();
+      const holiday = HOLIDAYS[dateKey(date)];
+
+      // Geçmiş günler: bugüne ne kadar yakınsa o kadar az soluk
+      // En eski (ayın başı) = çok soluk, dün = hafif soluk
+      let pastStyle = '';
+      if (isPast) {
+        const daysAgo = Math.floor((todayDate - date) / 86400000);
+        const daysInThisMonth = new Date(todayDate.getFullYear(), todayDate.getMonth()+1, 0).getDate();
+        // 0 gün önce = opacity 0.6, daysInMonth gün önce = opacity 0.05
+        const opacity = Math.max(0.05, 0.6 - (daysAgo / daysInThisMonth) * 0.55);
+        pastStyle = `style="opacity:${opacity.toFixed(2)}"`;
+      }
+
+      let cls = shift || 'outrange';
+      if (isToday)  cls += ' today-cell';
+      if (holiday && shift) cls += ' tatil-cell';
+      const info = shift ? shiftLabel(shift) : null;
+      calHTML += `<div class="cal-cell ${cls}" ${pastStyle}>
+        <span class="cal-num">${d}</span>
+        ${info ? `<span class="cal-icon">${info.icon}</span>` : ''}
+        ${holiday && shift ? `<span class="cal-tatil-name">${holiday}</span>` : ''}
+      </div>`;
+    }
+    calHTML += `</div>`;
+    cur.setMonth(cur.getMonth() + 1);
+  }
+  document.getElementById('calWrap').innerHTML = calHTML;
+}
+
+function updateClock() {
+  const n = new Date();
+  document.getElementById('clock').textContent =
+    `${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}:${String(n.getSeconds()).padStart(2,'0')}`;
+  const dateEl = document.getElementById('headerDate');
+  if (dateEl) dateEl.textContent = `${n.getDate()} ${TR_MONTHS[n.getMonth()]} ${n.getFullYear()}`;
+}
+
+// Saniyede bir countdown güncelle
+setInterval(updateClock, 1000);
+setInterval(() => {
+  // Geri sayımları her saniye güncelle — sadece countdown kısmı
+  const now = new Date();
+  const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const changeDate = nextChange(todayDate);
+  const izinDate   = nextIzin(todayDate);
+  const izinMs   = new Date(izinDate.getFullYear(), izinDate.getMonth(), izinDate.getDate(), 8,0,0) - now;
+  const changeMs = new Date(changeDate.getFullYear(), changeDate.getMonth(), changeDate.getDate(), 0,0,0) - now;
+  const iH = msToHMS(izinMs), cH = msToHMS(changeMs);
+  const iD = Math.floor(izinMs/86400000), cD = Math.floor(changeMs/86400000);
+  updateIzinBlocks(izinMs);
+  updateDegisimBlocks(changeMs);
+
+  // Vardiya bitiş sayacı güncelle
+  const now2 = new Date();
+  const todayShift2 = getShift(new Date(now2.getFullYear(), now2.getMonth(), now2.getDate()));
+  if (todayShift2 !== 'izin') {
+    let end2;
+    if (todayShift2 === 'gunduz') {
+      end2 = new Date(now2.getFullYear(), now2.getMonth(), now2.getDate(), 20, 0, 0);
+    } else {
+      end2 = new Date(now2.getFullYear(), now2.getMonth(), now2.getDate(), 8, 0, 0);
+      if (now2.getHours() >= 20) end2.setDate(end2.getDate() + 1);
+    }
+    const ms2 = Math.max(0, end2 - now2);
+    const blocks = document.querySelectorAll('.st-block .st-num');
+    if (blocks.length >= 3) {
+      blocks[0].textContent = String(Math.floor(ms2 / 3600000)).padStart(2,'0');
+      blocks[1].textContent = String(Math.floor((ms2 % 3600000) / 60000)).padStart(2,'0');
+      blocks[2].textContent = String(Math.floor((ms2 % 60000) / 1000)).padStart(2,'0');
+    }
+  }
+}, 1000);
+
+function smartBlocks(ms, cls) {
+  const totalSec = Math.max(0, Math.floor(ms / 1000));
+  const totalMin = Math.floor(totalSec / 60);
+  const totalHours = Math.floor(totalSec / 3600);
+  const haftalar = Math.floor(totalHours / (24 * 7));
+  const gunler   = Math.floor((totalHours % (24 * 7)) / 24);
+  const saatler  = totalHours % 24;
+  const dakika   = Math.floor((totalSec % 3600) / 60);
+  const saniye   = totalSec % 60;
+
+  if (haftalar > 0) {
+    // Hafta var → hafta / gün / saat
+    return `
+      <div class="c-block ${cls}"><span class="c-num">${haftalar}</span><span class="c-unit">Hafta</span></div>
+      <div class="c-block ${cls}"><span class="c-num">${gunler}</span><span class="c-unit">Gün</span></div>
+      <div class="c-block ${cls}"><span class="c-num">${String(saatler).padStart(2,'0')}</span><span class="c-unit">Saat</span></div>`;
+  } else if (gunler > 0) {
+    // Gün var → gün / saat / dakika
+    return `
+      <div class="c-block ${cls}"><span class="c-num">${gunler}</span><span class="c-unit">Gün</span></div>
+      <div class="c-block ${cls}"><span class="c-num">${String(saatler).padStart(2,'0')}</span><span class="c-unit">Saat</span></div>
+      <div class="c-block ${cls}"><span class="c-num">${String(dakika).padStart(2,'0')}</span><span class="c-unit">Dak</span></div>`;
+  } else {
+    // Gün yok → saat / dakika / saniye
+    return `
+      <div class="c-block ${cls}"><span class="c-num">${String(saatler).padStart(2,'0')}</span><span class="c-unit">Saat</span></div>
+      <div class="c-block ${cls}"><span class="c-num">${String(dakika).padStart(2,'0')}</span><span class="c-unit">Dak</span></div>
+      <div class="c-block ${cls}"><span class="c-num">${String(saniye).padStart(2,'0')}</span><span class="c-unit">San</span></div>`;
+  }
+}
+
+function updateIzinBlocks(izinMs) {
+  const el = document.getElementById('izinBlocks');
+  if (el) el.innerHTML = smartBlocks(izinMs, 'izin');
+}
+
+function updateDegisimBlocks(changeMs) {
+  const el = document.getElementById('degisimBlocks');
+  if (el) el.innerHTML = smartBlocks(changeMs, 'degisim');
+}
+
+// Tam sayfa günde bir yenile (gece yarısı ay değişince)
+function scheduleRefresh() {
+  const now = new Date();
+  const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()+1, 0,0,1);
+  setTimeout(() => { render(); scheduleRefresh(); }, midnight - now);
+}
+
+render();
+updateClock();
+scheduleRefresh();
+</script>
+</body>
+</html>

@@ -15,6 +15,20 @@
     --tatil: #ff5555;  --tatil-bg: rgba(255,85,85,0.08);
     --muted: #555577;  --text: #e0e0f0;
   }
+  body.light {
+    --bg: #f4f4fb; --surface: #ffffff; --card: #eaeaf5; --border: rgba(0,0,0,0.07);
+    --gunduz: #d97706; --gunduz-bg: rgba(251,191,36,0.18);
+    --gece: #6366f1;   --gece-bg: rgba(99,102,241,0.12);
+    --izin: #10b981;   --izin-bg: rgba(16,185,129,0.12);
+    --tatil: #ef4444;  --tatil-bg: rgba(239,68,68,0.08);
+    --muted: #8888aa;  --text: #1a1a2e;
+  }
+  .theme-btn {
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); font-size: 1rem; width: 34px; height: 34px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    margin-left: 10px; flex-shrink: 0;
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: 'Space Grotesk', sans-serif; min-height: 100vh; }
 
@@ -89,7 +103,7 @@
 <div class="header">
   <span class="header-icon">⏱</span>
   <h1>Vardiya Takip</h1>
-  <div class="header-clock"><span class="hc-time" id="clock">--:--:--</span><span class="hc-date" id="headerDate">--</span></div>
+  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">🌙</button><div class="header-clock"><span class="hc-time" id="clock">--:--:--</span><span class="hc-date" id="headerDate">--</span></div>
 </div>
 
 <div class="hero" id="hero"></div>
@@ -392,6 +406,42 @@ function updateDegisimBlocks(changeMs) {
   const el = document.getElementById('degisimBlocks');
   if (el) el.innerHTML = smartBlocks(changeMs, 'degisim');
 }
+
+function applyTheme(isLight) {
+  if (isLight) {
+    document.body.classList.add('light');
+    document.body.classList.remove('dark-override');
+  } else {
+    document.body.classList.remove('light');
+  }
+  const btn = document.getElementById('themeBtn');
+  if (btn) btn.textContent = isLight ? '☀️' : '🌙';
+}
+
+function toggleTheme() {
+  const currentlyLight = document.body.classList.contains('light');
+  const newLight = !currentlyLight;
+  applyTheme(newLight);
+  localStorage.setItem('vardiyaTheme', newLight ? 'light' : 'dark');
+}
+
+// Başlangıçta: önce localStorage, yoksa sistem tercihine bak
+(function() {
+  const saved = localStorage.getItem('vardiyaTheme');
+  if (saved) {
+    applyTheme(saved === 'light');
+  } else {
+    // Sistem tercihi
+    const preferLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+    applyTheme(preferLight);
+  }
+  // Sistem tercihi değişirse (localStorage yoksa) takip et
+  if (window.matchMedia) {
+    window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', e => {
+      if (!localStorage.getItem('vardiyaTheme')) applyTheme(e.matches);
+    });
+  }
+})();
 
 // Tam sayfa günde bir yenile (gece yarısı ay değişince)
 function scheduleRefresh() {

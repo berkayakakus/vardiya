@@ -137,6 +137,22 @@ const TR_MONTHS   = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz',
 const TR_SHORT    = ['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'];
 const TR_LONG     = ['Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi','Pazar'];
 
+function getChangeMs(now, todayDate) {
+  const diff = Math.floor((todayDate - START) / 86400000);
+  const pos = diff % 12;
+  const block = Math.floor(pos / 4);
+  const daysLeftInBlock = 3 - (pos % 4);
+  const lastDay = new Date(todayDate);
+  lastDay.setDate(lastDay.getDate() + daysLeftInBlock);
+  let endTime;
+  if (block === 0) {
+    endTime = new Date(lastDay.getFullYear(), lastDay.getMonth(), lastDay.getDate(), 20, 0, 0);
+  } else {
+    endTime = new Date(lastDay.getFullYear(), lastDay.getMonth(), lastDay.getDate() + 1, 8, 0, 0);
+  }
+  return endTime - now;
+}
+
 // Sabit başlangıç
 const START = new Date(2026, 5, 28); // 28 Haziran 2026
 
@@ -218,6 +234,8 @@ function render() {
   const daysToChange = Math.ceil((changeDate - todayDate) / 86400000);
   const daysToIzin   = Math.ceil((izinDate   - todayDate) / 86400000);
 
+
+
   // Vardiya bitiş saati
   let shiftEndMs = 0;
   if (todayShift === 'gunduz') {
@@ -266,7 +284,7 @@ function render() {
 
   // COUNTDOWN
   const izinMs   = new Date(izinDate.getFullYear(), izinDate.getMonth(), izinDate.getDate(), 8,0,0) - now;
-  const changeMs = new Date(changeDate.getFullYear(), changeDate.getMonth(), changeDate.getDate(), 0,0,0) - now;
+  const changeMs = getChangeMs(now, todayDate);
   const iH = msToHMS(izinMs), cH = msToHMS(changeMs);
   const iD = Math.floor(izinMs/86400000), cD = Math.floor(changeMs/86400000);
 
@@ -279,8 +297,8 @@ function render() {
       <div class="c-label">🔄 Değişime Kalan</div>
       <div class="countdown-blocks" id="degisimBlocks"></div>
     </div>`;
-  updateIzinBlocks(izinMs);
-  updateDegisimBlocks(changeMs);
+  updateIzinBlocks(izinMs2);
+  updateDegisimBlocks(changeMs2);
 
   // CALENDAR — bu aydan başla, tam 12 ay göster (son ay tam çıksın)
   // Geçmiş günler kademeli flulaşır, bugün beyaz çerçeveli
@@ -351,11 +369,11 @@ setInterval(() => {
   const changeDate = nextChange(todayDate);
   const izinDate   = nextIzin(todayDate);
   const izinMs   = new Date(izinDate.getFullYear(), izinDate.getMonth(), izinDate.getDate(), 8,0,0) - now;
-  const changeMs = new Date(changeDate.getFullYear(), changeDate.getMonth(), changeDate.getDate(), 0,0,0) - now;
+  const changeMs = getChangeMs(now, todayDate);
   const iH = msToHMS(izinMs), cH = msToHMS(changeMs);
   const iD = Math.floor(izinMs/86400000), cD = Math.floor(changeMs/86400000);
-  updateIzinBlocks(izinMs);
-  updateDegisimBlocks(changeMs);
+  updateIzinBlocks(izinMs2);
+  updateDegisimBlocks(changeMs2);
 
   // Vardiya bitiş sayacı güncelle
   const now2 = new Date();

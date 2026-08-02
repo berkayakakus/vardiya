@@ -297,8 +297,8 @@ function render() {
       <div class="c-label">🔄 Değişime Kalan</div>
       <div class="countdown-blocks" id="degisimBlocks"></div>
     </div>`;
-  updateIzinBlocks(izinMs2);
-  updateDegisimBlocks(changeMs2);
+  updateIzinBlocks(izinMs);
+  updateDegisimBlocks(changeMs);
 
   // CALENDAR — bu aydan başla, tam 12 ay göster (son ay tam çıksın)
   // Geçmiş günler kademeli flulaşır, bugün beyaz çerçeveli
@@ -372,8 +372,8 @@ setInterval(() => {
   const changeMs = getChangeMs(now, todayDate);
   const iH = msToHMS(izinMs), cH = msToHMS(changeMs);
   const iD = Math.floor(izinMs/86400000), cD = Math.floor(changeMs/86400000);
-  updateIzinBlocks(izinMs2);
-  updateDegisimBlocks(changeMs2);
+  updateIzinBlocks(izinMs);
+  updateDegisimBlocks(changeMs);
 
   // Vardiya bitiş sayacı güncelle
   const now2 = new Date();

@@ -26,11 +26,21 @@
   .theme-btn {
     background: var(--card); border: 1px solid var(--border); border-radius: 8px;
     color: var(--text); font-size: 0.7rem; font-weight: 700; letter-spacing: 1px;
-    height: 34px; padding: 0 12px; gap: 6px;
+    height: 34px; padding: 0 10px; gap: 6px;
     cursor: pointer; display: flex; align-items: center; justify-content: center;
     margin-left: 10px; flex-shrink: 0; white-space: nowrap;
   }
-  .theme-btn .ti { font-size: 1rem; }
+  .theme-btn .ti {
+    font-size: 0.95rem;
+    display: inline-flex; width: 18px; height: 18px;
+    align-items: center; justify-content: center; overflow: hidden;
+    border-radius: 50%; flex-shrink: 0;
+  }
+  .ti-auto {
+    background: linear-gradient(135deg, #1a1a2e 50%, #f5f5f5 50%);
+    display: inline-block; width: 16px; height: 16px; border-radius: 50%;
+    border: 1px solid var(--border); flex-shrink: 0;
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: 'Space Grotesk', sans-serif; min-height: 100vh; }
 
@@ -105,7 +115,7 @@
 <div class="header">
   <span class="header-icon">⏱</span>
   <h1>Vardiya Takip</h1>
-  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" style="width:auto;padding:0 10px;gap:6px;display:flex;align-items:center;font-size:0.7rem;font-weight:700;letter-spacing:1px;"><span class="ti" id="themeIcon">🌙</span>TEMA</button><div class="header-clock"><span class="hc-time" id="clock">--:--:--</span><span class="hc-date" id="headerDate">--</span></div>
+  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()"><span class="ti" id="themeIcon">🌙</span>TEMA</button><div class="header-clock"><span class="hc-time" id="clock">--:--:--</span><span class="hc-date" id="headerDate">--</span></div>
 </div>
 
 <div class="hero" id="hero"></div>
@@ -409,38 +419,39 @@ function updateDegisimBlocks(changeMs) {
   if (el) el.innerHTML = smartBlocks(changeMs, 'degisim');
 }
 
-function applyTheme(isLight) {
-  if (isLight) {
+// Temalar: 'dark', 'light', 'auto'
+function applyTheme(mode) {
+  const icon = document.getElementById('themeIcon');
+  if (mode === 'light') {
     document.body.classList.add('light');
-    document.body.classList.remove('dark-override');
-  } else {
+    if (icon) icon.innerHTML = '☀️';
+  } else if (mode === 'dark') {
     document.body.classList.remove('light');
+    if (icon) icon.innerHTML = '🌙';
+  } else {
+    // auto — sistem tercihine bak
+    const preferLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+    document.body.classList.toggle('light', preferLight);
+    if (icon) icon.innerHTML = '<span class="ti-auto"></span>';
   }
-  const btn = document.getElementById('themeBtn');
-  if (btn) { document.getElementById('themeIcon').textContent = isLight ? '☀️' : '🌙'; }
 }
 
 function toggleTheme() {
-  const currentlyLight = document.body.classList.contains('light');
-  const newLight = !currentlyLight;
-  applyTheme(newLight);
-  localStorage.setItem('vardiyaTheme', newLight ? 'light' : 'dark');
+  const modes = ['dark', 'light', 'auto'];
+  const saved = localStorage.getItem('vardiyaTheme') || 'auto';
+  const next = modes[(modes.indexOf(saved) + 1) % 3];
+  localStorage.setItem('vardiyaTheme', next);
+  applyTheme(next);
 }
 
-// Başlangıçta: önce localStorage, yoksa sistem tercihine bak
+// Başlangıç
 (function() {
-  const saved = localStorage.getItem('vardiyaTheme');
-  if (saved) {
-    applyTheme(saved === 'light');
-  } else {
-    // Sistem tercihi
-    const preferLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
-    applyTheme(preferLight);
-  }
-  // Sistem tercihi değişirse (localStorage yoksa) takip et
+  const saved = localStorage.getItem('vardiyaTheme') || 'auto';
+  applyTheme(saved);
+  // Sistem tercihi değişirse auto modda takip et
   if (window.matchMedia) {
-    window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', e => {
-      if (!localStorage.getItem('vardiyaTheme')) applyTheme(e.matches);
+    window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
+      if ((localStorage.getItem('vardiyaTheme') || 'auto') === 'auto') applyTheme('auto');
     });
   }
 })();

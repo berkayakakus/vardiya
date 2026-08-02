@@ -9,7 +9,7 @@
 
   :root {
     --bg: #080810; --surface: #0e0e1c; --card: #13132a; --border: rgba(255,255,255,0.07);
-    --gunduz: #f59e0b; --gunduz-bg: rgba(245,158,11,0.1);
+    --gunduz: #fbbf24; --gunduz-bg: rgba(251,191,36,0.15);
     --gece: #818cf8;   --gece-bg: rgba(129,140,248,0.1);
     --izin: #34d399;   --izin-bg: rgba(52,211,153,0.1);
     --tatil: #ff5555;  --tatil-bg: rgba(255,85,85,0.08);
@@ -25,10 +25,12 @@
   }
   .theme-btn {
     background: var(--card); border: 1px solid var(--border); border-radius: 8px;
-    color: var(--text); font-size: 1rem; width: 34px; height: 34px;
+    color: var(--text); font-size: 0.7rem; font-weight: 700; letter-spacing: 1px;
+    height: 34px; padding: 0 12px; gap: 6px;
     cursor: pointer; display: flex; align-items: center; justify-content: center;
-    margin-left: 10px; flex-shrink: 0;
+    margin-left: 10px; flex-shrink: 0; white-space: nowrap;
   }
+  .theme-btn .ti { font-size: 1rem; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: 'Space Grotesk', sans-serif; min-height: 100vh; }
 
@@ -103,7 +105,7 @@
 <div class="header">
   <span class="header-icon">⏱</span>
   <h1>Vardiya Takip</h1>
-  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">🌙</button><div class="header-clock"><span class="hc-time" id="clock">--:--:--</span><span class="hc-date" id="headerDate">--</span></div>
+  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" style="width:auto;padding:0 10px;gap:6px;display:flex;align-items:center;font-size:0.7rem;font-weight:700;letter-spacing:1px;"><span class="ti" id="themeIcon">🌙</span>TEMA</button><div class="header-clock"><span class="hc-time" id="clock">--:--:--</span><span class="hc-date" id="headerDate">--</span></div>
 </div>
 
 <div class="hero" id="hero"></div>
@@ -415,7 +417,7 @@ function applyTheme(isLight) {
     document.body.classList.remove('light');
   }
   const btn = document.getElementById('themeBtn');
-  if (btn) btn.textContent = isLight ? '☀️' : '🌙';
+  if (btn) { document.getElementById('themeIcon').textContent = isLight ? '☀️' : '🌙'; }
 }
 
 function toggleTheme() {

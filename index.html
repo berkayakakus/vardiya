@@ -70,6 +70,23 @@
   .card-value.izin   { color: var(--izin); }   .card-value.degisim { color: var(--text); }
   .card-sub { font-size: 0.7rem; color: var(--muted); margin-top: 4px; }
   .shift-timer { display: flex; gap: 8px; margin-top: 12px; }
+  .izin-progress-label {
+    font-size: 0.65rem; color: var(--izin); margin-top: 6px;
+    text-align: center; font-family: 'Space Mono', monospace;
+    opacity: 0.8;
+  }
+  .hero-card { position: relative; }
+  .border-progress-svg {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; border-radius: 14px; overflow: visible;
+  }
+  .border-progress-svg rect {
+    fill: none;
+    stroke-width: 3;
+    stroke-linecap: round;
+  }
+  .border-track { stroke: rgba(255,255,255,0.06); }
+  .border-fill  { transition: stroke-dashoffset 1s linear; }
   .st-block { background: var(--surface); border-radius: 8px; padding: 8px 10px 6px; text-align: center; flex: 1; }
   .st-num { font-family: 'Space Mono', monospace; font-size: 1.4rem; font-weight: 700; display: block; line-height: 1; }
   .st-unit { font-size: 0.55rem; text-transform: uppercase; color: var(--muted); display: block; margin-top: 3px; }
@@ -142,6 +159,61 @@
 const TR_MONTHS   = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
 const TR_SHORT    = ['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'];
 const TR_LONG     = ['Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi','Pazar'];
+
+function makeBorderSVG(pct, color) {
+  // Rect perimetresi: (w-2r)*2 + (h-2r)*2 + 2*pi*r
+  // Gerçek boyutu JS'den bilemeyiz, CSS'den okuyamayız
+  // Sabit tahmin: kart yaklaşık 340x??? px - JS'de clientWidth kullanacağız
+  // Bunun yerine viewBox %100 yapıp normalize edelim
+  // w=100 h=100 (%), r=8 (%), perimeter = 2*(100-16) + 2*(100-16) + 2*pi*8 = 336 + 50.3 = ~386
+  const W = 100, H = 100, R = 8;
+  const perim = 2*(W - 2*R) + 2*(H - 2*R) + 2*Math.PI*R;
+  const offset = perim * (1 - pct/100);
+  // pathLength'i kullanarak basitleştirelim
+  return `<svg class="border-progress-svg" viewBox="0 0 100 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <rect class="border-track" x="1.5" y="1.5" width="97" height="97" rx="7" ry="7" pathLength="100" stroke="${color}" opacity="0.15"/>
+    <rect class="border-fill" x="1.5" y="1.5" width="97" height="97" rx="7" ry="7"
+      pathLength="100"
+      stroke="${color}"
+      stroke-dasharray="100"
+      stroke-dashoffset="${(100 - pct).toFixed(2)}"
+      id="borderFill"
+      style="transform-origin:50% 0%;transform:rotate(0deg);filter:drop-shadow(0 0 3px ${color})"
+    />
+  </svg>`;
+}
+
+function buildIzinCard(now, todayDate) {
+  const diffNow = Math.floor((todayDate - START) / 86400000);
+  const posInBlock = diffNow % 4;
+  const daysPassed = posInBlock + 1;
+  const hoursPassed = now.getHours() + now.getMinutes()/60 + now.getSeconds()/3600;
+  const hoursPassedTotal = posInBlock * 24 + hoursPassed;
+  const pct = Math.max(0, Math.min(100, (1 - hoursPassedTotal / 96) * 100));
+  return '<div class="card-label" style="color:var(--izin);font-size:0.9rem;margin-top:4px">🏖️ Bugün İzinlisin · ' + daysPassed + '. Gün</div>' +
+    '<div class="izin-progress-label" id="izinProgressLabel">İzin bloğunun %' + pct.toFixed(0) + "'i kaldı</div>";
+}
+
+function shiftProgress(now, todayDate, shift) {
+  // Gündüz: 08:00-20:00 = 12 saat
+  // Gece: 20:00-08:00 = 12 saat
+  let startH, totalMs, elapsedMs;
+  if (shift === 'gunduz') {
+    startH = 8;
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8, 0, 0);
+    const end   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 20, 0, 0);
+    totalMs   = end - start;
+    elapsedMs = now - start;
+  } else {
+    // Gece 20:00 başlar
+    let start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 20, 0, 0);
+    if (now.getHours() < 8) start.setDate(start.getDate() - 1);
+    const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1, 8, 0, 0);
+    totalMs   = end - start;
+    elapsedMs = now - start;
+  }
+  return Math.max(0, Math.min(100, (1 - elapsedMs / totalMs) * 100));
+}
 
 function getChangeMs(now, todayDate) {
   const diff = Math.floor((todayDate - START) / 86400000);
@@ -261,7 +333,8 @@ function render() {
   const seS = String(Math.floor((Math.max(0,shiftEndMs) % 60000) / 1000)).padStart(2,'0');
 
   document.getElementById('hero').innerHTML = `
-    <div class="hero-card ${todayShift}">
+    <div class="hero-card ${todayShift}" id="heroCard">
+      ${todayShift==='gunduz' ? makeBorderSVG(shiftProgress(now,todayDate,'gunduz'),'#f59e0b') : todayShift==='gece' ? makeBorderSVG(shiftProgress(now,todayDate,'gece'),'#818cf8') : makeBorderSVG((() => { const d=Math.floor((todayDate-START)/86400000); const pos=d%4; const h=now.getHours()+now.getMinutes()/60+now.getSeconds()/3600; return Math.max(0,Math.min(100,(1-(pos*24+h)/96)*100)); })(),'#34d399')}
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
         <span style="font-size:2rem">${sl.icon}</span>
         <div>
@@ -279,7 +352,8 @@ function render() {
         <div class="st-block ${todayShift}"><span class="st-num">${seH}</span><span class="st-unit">Saat</span></div>
         <div class="st-block ${todayShift}"><span class="st-num">${seM}</span><span class="st-unit">Dak</span></div>
         <div class="st-block ${todayShift}"><span class="st-num">${seS}</span><span class="st-unit">San</span></div>
-      </div>` : '<div class="card-label" style="color:var(--izin);font-size:0.9rem;margin-top:4px">🏖️ Bugün İzinlisin</div>'}
+      </div>
+      <div class="izin-progress-label" id="shiftProgressLabel" style="color:${todayShift==='gunduz'?'var(--gunduz)':'var(--gece)'}">Vardiya %${shiftProgress(now,todayDate,todayShift).toFixed(0)}'i kaldı</div>` : buildIzinCard(now, todayDate)}
     </div>`;
 
   document.getElementById('tatilToday').innerHTML = todayHoliday
@@ -381,6 +455,40 @@ setInterval(() => {
   updateIzinBlocks(izinMs);
   updateDegisimBlocks(changeMs);
 
+  // Progress bar güncelle (izin veya shift)
+  const pb = document.getElementById('izinProgressBar');
+  const pl = document.getElementById('izinProgressLabel');
+  if (pb && pl) {
+    const diffNow2 = Math.floor((todayDate - START) / 86400000);
+    const posInBlock2 = diffNow2 % 4;
+    const hoursPassed2 = now.getHours() + now.getMinutes()/60 + now.getSeconds()/3600;
+    const hoursPassedTotal2 = posInBlock2 * 24 + hoursPassed2;
+    const pct2 = Math.max(0, Math.min(100, (1 - hoursPassedTotal2 / 96) * 100));
+    pb.style.width = pct2.toFixed(2) + '%';
+    pl.textContent = "İzin bloğunun %" + pct2.toFixed(0) + "'i kaldı";
+  }
+  const spl = document.getElementById('shiftProgressLabel');
+  if (spl) {
+    const todayShift2 = getShift(todayDate);
+    const spct = shiftProgress(now, todayDate, todayShift2);
+    spl.textContent = "Vardiya %" + spct.toFixed(0) + "'i kaldı";
+  }
+  // Border SVG güncelle
+  const bf = document.getElementById('borderFill');
+  if (bf) {
+    const todayShift3 = getShift(todayDate);
+    let bpct;
+    if (todayShift3 === 'izin') {
+      const d2 = Math.floor((todayDate - START) / 86400000);
+      const pos2 = d2 % 4;
+      const h2 = now.getHours() + now.getMinutes()/60 + now.getSeconds()/3600;
+      bpct = Math.max(0, Math.min(100, (1 - (pos2*24 + h2) / 96) * 100));
+    } else {
+      bpct = shiftProgress(now, todayDate, todayShift3);
+    }
+    bf.setAttribute('stroke-dashoffset', (100 - bpct).toFixed(2));
+  }
+
   // Vardiya bitiş sayacı güncelle
   const now2 = new Date();
   const todayShift2 = getShift(new Date(now2.getFullYear(), now2.getMonth(), now2.getDate()));
@@ -402,9 +510,9 @@ setInterval(() => {
   }
 }, 1000);
 
-function smartBlocks(ms, cls) {
+function smartBlocks(ms, cls, threshold) {
+  // threshold: bu ms'nin altında saat/dak/san göster
   const totalSec = Math.max(0, Math.floor(ms / 1000));
-  const totalMin = Math.floor(totalSec / 60);
   const totalHours = Math.floor(totalSec / 3600);
   const haftalar = Math.floor(totalHours / (24 * 7));
   const gunler   = Math.floor((totalHours % (24 * 7)) / 24);
@@ -412,20 +520,23 @@ function smartBlocks(ms, cls) {
   const dakika   = Math.floor((totalSec % 3600) / 60);
   const saniye   = totalSec % 60;
 
-  if (haftalar > 0) {
-    // Hafta var → hafta / gün / saat
+  if (ms <= threshold) {
+    // Eşiğin altı → saat / dak / san
+    return `
+      <div class="c-block ${cls}"><span class="c-num">${String(totalHours).padStart(2,'0')}</span><span class="c-unit">Saat</span></div>
+      <div class="c-block ${cls}"><span class="c-num">${String(dakika).padStart(2,'0')}</span><span class="c-unit">Dak</span></div>
+      <div class="c-block ${cls}"><span class="c-num">${String(saniye).padStart(2,'0')}</span><span class="c-unit">San</span></div>`;
+  } else if (haftalar > 0) {
     return `
       <div class="c-block ${cls}"><span class="c-num">${haftalar}</span><span class="c-unit">Hafta</span></div>
       <div class="c-block ${cls}"><span class="c-num">${gunler}</span><span class="c-unit">Gün</span></div>
       <div class="c-block ${cls}"><span class="c-num">${String(saatler).padStart(2,'0')}</span><span class="c-unit">Saat</span></div>`;
   } else if (gunler > 0) {
-    // Gün var → gün / saat / dakika
     return `
       <div class="c-block ${cls}"><span class="c-num">${gunler}</span><span class="c-unit">Gün</span></div>
       <div class="c-block ${cls}"><span class="c-num">${String(saatler).padStart(2,'0')}</span><span class="c-unit">Saat</span></div>
       <div class="c-block ${cls}"><span class="c-num">${String(dakika).padStart(2,'0')}</span><span class="c-unit">Dak</span></div>`;
   } else {
-    // Gün yok → saat / dakika / saniye
     return `
       <div class="c-block ${cls}"><span class="c-num">${String(saatler).padStart(2,'0')}</span><span class="c-unit">Saat</span></div>
       <div class="c-block ${cls}"><span class="c-num">${String(dakika).padStart(2,'0')}</span><span class="c-unit">Dak</span></div>
@@ -435,12 +546,14 @@ function smartBlocks(ms, cls) {
 
 function updateIzinBlocks(izinMs) {
   const el = document.getElementById('izinBlocks');
-  if (el) el.innerHTML = smartBlocks(izinMs, 'izin');
+  // İzin: 24 saat altında saat/dak/san
+  if (el) el.innerHTML = smartBlocks(izinMs, 'izin', 24 * 3600 * 1000);
 }
 
 function updateDegisimBlocks(changeMs) {
   const el = document.getElementById('degisimBlocks');
-  if (el) el.innerHTML = smartBlocks(changeMs, 'degisim');
+  // Değişim: 12 saat altında saat/dak/san
+  if (el) el.innerHTML = smartBlocks(changeMs, 'degisim', 12 * 3600 * 1000);
 }
 
 // Temalar: 'dark', 'light', 'auto'
